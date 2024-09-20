@@ -9,7 +9,7 @@ proteusAI.__version__
 library = pai.Library(source='demo/demo_data/Nitric_Oxide_Dioxygenase_raw.csv', seqs_col='Sequence', y_col='Data', 
                     y_type='num', names_col='Description')
 
-
+# test 123
 # compute and save ESM-2 representations at example_lib/representations/esm2
 library.compute(method='esm2', batch_size=10)
 
