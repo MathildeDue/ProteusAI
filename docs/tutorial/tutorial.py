@@ -12,7 +12,7 @@ pai.__version__
 
 # %% 
 library = pai.Library(source='demo/demo_data/master_dataset.csv', seqs_col='binder_seq', y_col='pae_interaction_HLA-A101-RVTDESILSY', 
-                    y_type='num', names_col='binder_name', optim_problem='min')
+                    y_type='num', names_col='binder_name')
 
 
 # %% [markdown]
@@ -41,5 +41,5 @@ _ = model.train(k_folds=5, model_type='rf', x='blosum62')
 # Searching new mutants will produce an output dataframe containing the new predictions. Here we are using the expected improvement ('ei') acquisition function.
 
 # %% 
-out = model.search(acq_fn='ei')
+out = model.search(acq_fn='ei', optim_problem='min')
 out
