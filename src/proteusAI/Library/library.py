@@ -211,7 +211,6 @@ class Library:
             os.makedirs(self.user)
             if self.fname and not os.path.exists(os.path.join(self.user, self.fname.split('.')[0])):
                 fname = self.fname.split('.')[0]
-                os.path.join(self.user, f'{fname}')
                 os.makedirs(os.path.join(self.user, f'{fname}'))
                 os.makedirs(os.path.join(self.user, f'{fname}/library'))
                 os.makedirs(os.path.join(self.user, f'{fname}/zero_shot'))
