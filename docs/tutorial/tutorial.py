@@ -12,7 +12,7 @@ pai.__version__
 # The data must contain the mutant sequences and y_values for the MLDE workflow. It is recommended to have useful sequence names for later interpretability, and to define the data type.
 
 # %% 
-library = pai.Library(source='demo/demo_data/ogTarget_dataset.csv', seqs_col='binder_seq', y_col='pae_interaction_HLA-A101-RVTDESILSY', 
+library = pai.Library(source='demo/demo_data/master_dataset.csv', seqs_col='binder_seq', y_col='pae_interaction_HLA-A101-RVTDESILSY', 
                     y_type='num', names_col='binder_name')
 
 
