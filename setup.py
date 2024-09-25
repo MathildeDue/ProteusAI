@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    author="Jonathan Funk",
+    authors=["Jonathan Funk"],
     author_email="funk.jonathan21@gmail.com",
     url="https://github.com/jonfunk21/ProteusAI",
     packages=find_packages("src"),

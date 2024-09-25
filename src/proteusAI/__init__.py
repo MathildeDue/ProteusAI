@@ -10,4 +10,4 @@ __author__ = "Jonathan Funk"
 
 from .Protein.protein import Protein
 from .Library.library import Library
-from .Model.model_copy import Model
+from .Model.model import Model

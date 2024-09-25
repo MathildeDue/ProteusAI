@@ -8,4 +8,4 @@ A subpackage is concerned with the Model object of ProteusAI.
 __name__ = "proteusAI"
 __author__ = "Jonathan Funk"
 
-from .model_copy import *
+from .model import *
