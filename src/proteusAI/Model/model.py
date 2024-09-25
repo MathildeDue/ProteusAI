@@ -30,6 +30,7 @@ import pandas as pd
 import gpytorch
 import numpy as np
 
+
 class Model:
     """
     The Model object allows the user to create machine learning models, using 
@@ -100,7 +101,8 @@ class Model:
         # Set attributes using the provided kwargs
         self._set_attributes(**kwargs)
 
-   ### args
+    
+    ### args
     def _set_attributes(self, **kwargs):
         defaults = {
             'library': None,
@@ -114,7 +116,7 @@ class Model:
             'custom_model': None,
             'optim': 'adam',
             'lr': 10e-4,
-            #'seed': 42,
+            'seed': None,
             'dest' : None,
             'pbar' : None
         }
@@ -139,7 +141,7 @@ class Model:
             'custom_model': None,
             'optim': 'adam',
             'lr': 10e-4,
-            'seed': 42,
+            'seed': None,
             'dest' : None,
             'pbar' : None
         }
@@ -209,7 +211,8 @@ class Model:
 
         proteins = self.library.proteins
 
-        random.seed(self.seed)
+        if self.seed:
+            random.seed(self.seed)
 
         train_data, test_data, val_data = [], [], []
 
@@ -250,8 +253,9 @@ class Model:
         Returns:
             list: List of representations.
         """
-        torch.manual_seed(self.seed)
-        torch.cuda.manual_seed_all(self.seed)
+        if self.seed:
+            torch.manual_seed(self.seed)
+            torch.cuda.manual_seed_all(self.seed)
 
         reps = self.library.load_representations(rep=self.x, proteins=proteins)
 
@@ -316,7 +320,6 @@ class Model:
             return model
         else:
             raise ValueError(f"Model type '{model_type}' has not been implemented yet")
-
 
 
     def train_sklearn(self, rep_path, pbar=None):
@@ -666,7 +669,7 @@ class Model:
         return out
 
 
-     # Save the sequences, y-values, and predicted y-values to CSV
+    # Save the sequences, y-values, and predicted y-values to CSV
     def save_to_csv(self, proteins, y_values, y_pred_values, y_sigma_values, filename, acq_scores=None):
         # Prepare data for CSV and DataFrame
         data = []
@@ -858,17 +861,18 @@ class Model:
         return fig, ax
 
 
-    def search(self, N=10, labels=['all'], optim_problem='max', method='ga', max_eval=10000, explore=0.1, batch_size=100, overwrite=False, pbar=None):
+    def search(self, N=10, labels=['all'], optim_problem='max', method='ga', max_eval=10000, explore=0.1, batch_size=100, pbar=None, acq_fn='ei'):
         """Search for new mutants or select variants from a set of sequences"""
 
         if self.y_type == 'class':
             out, mask = self._class_search(N=N, labels=labels, method=method, max_eval=max_eval, pbar=pbar)
             return out, mask
         elif self.y_type == 'num':
-            out = self._num_search(method=method, optim_problem=optim_problem, max_eval=max_eval, explore=explore, batch_size=batch_size, overwrite=overwrite, pbar=pbar)
+            out = self._num_search(method=method, optim_problem=optim_problem, max_eval=max_eval, explore=explore, batch_size=batch_size, pbar=pbar, acq_fn=acq_fn)
             return out
 
         
+    
     def _class_search(self, N=10, optim_problem='max', labels=['all'], method='ga', max_eval=10000, pbar=None):
         """
         Sample diverse sequences and return a mask with 1 for selected indices and 0 for non-selected.
@@ -936,7 +940,7 @@ class Model:
         return out, mask
     
 
-    def _num_search(self, optim_problem='max', method='ga', max_eval=10000, explore=0.1, batch_size=100, overwrite=False, pbar=None):
+    def _num_search(self, optim_problem='max', method='ga', max_eval=10000, explore=0.1, batch_size=100, pbar=None, acq_fn='ei'):
         """
         Search for improved mutants.
 
@@ -970,13 +974,7 @@ class Model:
             improved_seqs = [prot.seq for prot in proteins if prot.y < mean_y]
 
         # Introduce random mutations from the mutations dictionary
-        seq_lens = set([len(seq) for seq in improved_seqs])
-        if len(seq_lens) > 1:
-            # allow all amino acids for each position
-            aa_list = ['A', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'K', 'L', 'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'V', 'W', 'Y']
-            mutations = {i: aa_list for i in range(1,max(seq_lens))}
-        else:
-            mutations = BO.find_mutations(improved_seqs)
+        mutations = BO.find_mutations(improved_seqs)
 
         # Save destination for search_results
         if self.dest != None:
@@ -992,10 +990,8 @@ class Model:
         # results file name
         fname = f"{csv_dest}/{self.model_type}_{self.x}.csv"
         
-        if not overwrite:
-            print('WARNING: Previous search results will be overwritten')
-            if os.path.exists(os.path.join(csv_dest, fname)):
-                self.search_df = pd.read_csv(os.path.join(csv_dest, fname))
+        if os.path.exists(os.path.join(csv_dest, fname)):
+            self.search_df = pd.read_csv(os.path.join(csv_dest, fname))
         
         mutant_df = self._mutate(proteins, mutations, explore=explore, max_eval=max_eval)
 
@@ -1007,9 +1003,10 @@ class Model:
         
         library = Library(user=self.library.user, source=out)
 
-        library.compute(method=self.x, pbar=pbar, batch_size=batch_size)
+        if self.x not in self._in_memory_representations:
+            library.compute(method=self.x, pbar=pbar, batch_size=batch_size)
 
-        val_data, y_pred, y_sigma, y_val, acq_score = self.predict(library.proteins)
+        val_data, y_pred, y_sigma, y_val, acq_score = self.predict(library.proteins, acq_fn=acq_fn)
         
         self.search_df = self.save_to_csv(val_data, y_val, y_pred, y_sigma, csv_file, acq_scores=acq_score)
         
@@ -1057,19 +1054,14 @@ class Model:
                 # Explore: random position and random mutation
                 pos = random.randint(0, len(seq_list) - 1)
                 mut = random.choice("ACDEFGHIKLMNPQRSTVWY")
-                mutated_name = name + f"+{seq_list[pos]}{pos+1}{mut}"  # list is indexed at 0 but mutation descriptions at 1
             else:
                 # Exploit: use known mutation from the provided mutations dictionary
-                try:
-                    pos, mut_list = random.choice(list(mutations.items()))
-                    pos = pos - 1
-                    if pos < len(seq_list):
-                        mut = random.choice(mut_list)
-                    mutated_name = name + f"+{seq_list[pos]}{pos+1}{mut}"  # list is indexed at 0 but mutation descriptions at 1
-                except:
-                    pos = random.randint(0, len(seq_list) - 1)
-                    mut = random.choice("ACDEFGHIKLMNPQRSTVWY")
-                    mutated_name = name + f"+{seq_list[pos]}{pos+1}{mut}"  # list is indexed at 0 but mutation descriptions at 1
+                pos, mut_list = random.choice(list(mutations.items()))
+                pos = pos - 1
+                if pos < len(seq_list):
+                    mut = random.choice(mut_list)
+
+            mutated_name = name + f"+{seq_list[pos]}{pos+1}{mut}"  # list is indexed at 0 but mutation descriptions at 1
             
             if seq_list[pos] != mut and mutated_name not in mutated_names:  # Exclude mutations to the same residue
                 seq_list[pos] = mut
