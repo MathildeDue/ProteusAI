@@ -872,7 +872,7 @@ class Model:
             return out
 
         
-
+    
     def _class_search(self, N=10, optim_problem='max', labels=['all'], method='ga', max_eval=10000, pbar=None):
         """
         Sample diverse sequences and return a mask with 1 for selected indices and 0 for non-selected.
