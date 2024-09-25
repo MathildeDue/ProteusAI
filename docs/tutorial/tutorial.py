@@ -42,7 +42,7 @@ _ = model.train(k_folds=5, model_type='rf', x='blosum62', seed=42)
 # Searching new mutants will produce an output dataframe containing the new predictions. Here we are using the expected improvement ('ei') acquisition function.
 
 # %% 
-out = model.search(optim_problem='max', overwrite=True)
+out = model.search(optim_problem='min', overwrite=True)
 out.to_csv('demo/demo_data/predictions.csv')
 
 
