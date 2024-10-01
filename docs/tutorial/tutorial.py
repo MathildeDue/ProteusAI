@@ -12,7 +12,7 @@ pai.__version__
 # The data must contain the mutant sequences and y_values for the MLDE workflow. It is recommended to have useful sequence names for later interpretability, and to define the data type.
 
 # %% 
-library = pai.Library(source='demo/demo_data/master_dataset.csv', seqs_col='binder_seq', y_col='pae_interaction_HLA-A101-RVTDESILSY', 
+library = pai.Library(source='../../demo/demo_data/master_dataset.csv', seqs_col='binder_seq', y_col='pae_interaction_HLA-A101-RVTDESILSY', 
                     y_type='num', names_col='binder_name')
 
 
@@ -42,7 +42,8 @@ _ = model.train(k_folds=5, model_type='rf', x='blosum62', seed=42)
 # Searching new mutants will produce an output dataframe containing the new predictions. Here we are using the expected improvement ('ei') acquisition function.
 
 # %% 
-out = model.search(optim_problem='min', overwrite=True)
+print(pai.__file__)
+out = model.search(optim_problem='min', overwrite=False)
 out.to_csv('demo/demo_data/predictions.csv')
 
 
